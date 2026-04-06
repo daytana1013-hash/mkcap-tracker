@@ -14,62 +14,51 @@ COVERAGE = {
 }
 
 def get_biz_date():
+    # 최근 영업일 중 실제 데이터 있는 날 탐색 (최대 10일 전까지)
     today = datetime.now()
-    for i in range(7):
+    for i in range(10):
         d = today - timedelta(days=i)
-        if d.weekday() < 5:
-            candidate = d.strftime("%Y%m%d")
-            try:
-                df = stock.get_market_cap(candidate, market="KOSPI")
-                if len(df) > 0:
-                    print(f"유효 기준일: {candidate}")
-                    return candidate
-            except Exception:
-                continue
-    return (today - timedelta(days=3)).strftime("%Y%m%d")
+        if d.weekday() >= 5:
+            continue
+        candidate = d.strftime("%Y%m%d")
+        try:
+            tickers = stock.get_market_ticker_list(candidate, market="KOSPI")
+            if tickers and len(tickers) > 0:
+                print(f"유효 기준일: {candidate}")
+                return candidate
+        except Exception:
+            continue
+    # fallback: 금요일 강제 지정
+    d = today
+    while d.weekday() != 4:
+        d -= timedelta(days=1)
+    return d.strftime("%Y%m%d")
 
 def fetch_all(biz_date):
     results = {}
     for mkt in ["KOSPI", "KOSDAQ"]:
         try:
-            cap_df = stock.get_market_cap(biz_date, market=mkt)
-            ohlcv_df = stock.get_market_ohlcv(biz_date, market=mkt)
-            print(f"[{mkt}] cap={list(cap_df.columns)}")
-            print(f"[{mkt}] ohlcv={list(ohlcv_df.columns)}")
+            tickers = stock.get_market_ticker_list(biz_date, market=mkt)
+            print(f"[{mkt}] 전체 종목수: {len(tickers)}")
             for code in COVERAGE:
-                if code not in cap_df.index:
+                if code not in tickers:
                     continue
-                row_cap = cap_df.loc[code]
-                mkcap = 0
-                for col in cap_df.columns:
-                    try:
-                        mkcap = int(row_cap[col]) // 100000000
-                        break
-                    except Exception:
+                try:
+                    df = stock.get_market_ohlcv(biz_date, biz_date, code)
+                    cap = stock.get_market_cap(biz_date, biz_date, code)
+                    if df.empty or cap.empty:
                         continue
-                price = 0
-                chg = 0.0
-                if code in ohlcv_df.index:
-                    row_price = ohlcv_df.loc[code]
-                    cols = list(ohlcv_df.columns)
-                    try:
-                        price = int(row_price[cols[3]])
-                    except Exception:
-                        pass
-                    try:
-                        chg = float(row_price[cols[-1]])
-                    except Exception:
-                        pass
-                results[code] = {
-                    "ticker": code,
-                    "name": COVERAGE[code],
-                    "market": mkt,
-                    "price": price,
-                    "mkcap_eok": mkcap,
-                    "chg_rate": round(chg, 2),
-                    "date": biz_date,
-                }
-            print(f"[{mkt}] {sum(1 for v in results.values() if v['market']==mkt)}개")
+                    price = int(df.iloc[-1]["종가"])
+                    chg   = float(df.iloc[-1]["등락률"])
+                    mkcap = int(cap.iloc[-1]["시가총액"]) // 100000000
+                    results[code] = {
+                        "ticker": code, "name": COVERAGE[code], "market": mkt,
+                        "price": price, "mkcap_eok": mkcap,
+                        "chg_rate": round(chg, 2), "date": biz_date,
+                    }
+                except Exception as e2:
+                    print(f"  [{code}] 오류: {e2}")
+            print(f"[{mkt}] {sum(1 for v in results.values() if v['market']==mkt)}개 완료")
         except Exception as e:
             print(f"[ERROR] {mkt}: {e}")
     return results
