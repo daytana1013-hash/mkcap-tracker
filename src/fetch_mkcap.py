@@ -14,66 +14,40 @@ COVERAGE = {
 }
 
 def get_biz_date():
+    # 최근 5 영업일 중 데이터 있는 날짜 자동 탐색
     today = datetime.now()
-    if today.weekday() == 5: today -= timedelta(days=1)
-    elif today.weekday() == 6: today -= timedelta(days=2)
-    return today.strftime("%Y%m%d")
+    for i in range(7):
+        d = today - timedelta(days=i)
+        if d.weekday() < 5:  # 평일만
+            candidate = d.strftime("%Y%m%d")
+            try:
+                df = stock.get_market_cap(candidate, market="KOSPI")
+                if len(df) > 0:
+                    print(f"유효 기준일: {candidate}")
+                    return candidate
+            except:
+                continue
+    return (today - timedelta(days=3)).strftime("%Y%m%d")
 
 def fetch_all(biz_date):
     results = {}
     for mkt in ["KOSPI", "KOSDAQ"]:
         try:
-            # 시가총액
-            cap_df = stock.get_market_cap(biz_date, market=mkt)
-            print(f"[{mkt}] cap 컬럼: {list(cap_df.columns)}")
-
-            # 주가
+            cap_df   = stock.get_market_cap(biz_date, market=mkt)
             ohlcv_df = stock.get_market_ohlcv(biz_date, market=mkt)
-            print(f"[{mkt}] ohlcv 컬럼: {list(ohlcv_df.columns)}")
-
-            # 컬럼 자동 감지
-            cap_col = [c for c in cap_df.columns if '시가총액' in c or 'cap' in c.lower() or 'Mktcap' in c]
-            close_col = [c for c in ohlcv_df.columns if '종가' in c or c == 'Close' or c == 'close']
-            chg_col = [c for c in ohlcv_df.columns if '등락' in c or c == 'Change' or c == 'Chg' or '변동' in c]
-
-            cap_key   = cap_col[0]   if cap_col   else list(cap_df.columns)[0]
-            close_key = close_col[0] if close_col else list(ohlcv_df.columns)[3]
-            chg_key   = chg_col[0]   if chg_col   else None
-
-            print(f"[{mkt}] 사용 컬럼 → 시총:{cap_key}, 종가:{close_key}, 등락:{chg_key}")
+            print(f"[{mkt}] cap컬럼={list(cap_df.columns)}")
+            print(f"[{mkt}] ohlcv컬럼={list(ohlcv_df.columns)}")
+            print(f"[{mkt}] cap행수={len(cap_df)}, ohlcv행수={len(ohlcv_df)}")
 
             for code in COVERAGE:
                 if code not in cap_df.index: continue
-                mkcap = int(cap_df.loc[code, cap_key]) // 100000000
-                price = int(ohlcv_df.loc[code, close_key]) if code in ohlcv_df.index else 0
-                chg   = float(ohlcv_df.loc[code, chg_key]) if (chg_key and code in ohlcv_df.index) else 0.0
-                results[code] = {
-                    "ticker": code, "name": COVERAGE[code], "market": mkt,
-                    "price": price, "mkcap_eok": mkcap,
-                    "chg_rate": round(chg, 2), "date": biz_date,
-                }
-            print(f"[{mkt}] {sum(1 for v in results.values() if v['market']==mkt)}개 매칭")
-        except Exception as e:
-            print(f"[ERROR] {mkt}: {e}")
-    return results
+                row_cap   = cap_df.loc[code]
+                row_price = ohlcv_df.loc[code] if code in ohlcv_df.index else None
 
-def save(data, biz_date):
-    os.makedirs("data", exist_ok=True)
-    with open("data/latest.json", "w", encoding="utf-8") as f:
-        json.dump({"updated": biz_date, "stocks": list(data.values())}, f, ensure_ascii=False, indent=2)
-    hist = []
-    if os.path.exists("data/history.json"):
-        with open("data/history.json", encoding="utf-8") as f: hist = json.load(f)
-    hist = [h for h in hist if h["date"] != biz_date]
-    hist.append({"date": biz_date, "stocks": list(data.values())})
-    hist = sorted(hist, key=lambda x: x["date"], reverse=True)[:250]
-    with open("data/history.json", "w", encoding="utf-8") as f:
-        json.dump(hist, f, ensure_ascii=False, indent=2)
-    print(f"[DONE] {len(data)}개 저장")
+                # 시총: 첫번째 숫자 컬럼
+                mkcap = 0
+                for col in cap_df.columns:
+                    try: mkcap = int(row_cap[col]) // 100000000; break
+                    except: continue
 
-if __name__ == "__main__":
-    biz_date = get_biz_date()
-    print(f"기준일: {biz_date}")
-    data = fetch_all(biz_date)
-    if data: save(data, biz_date)
-    else: print("[ERROR] 데이터 없음"); exit(1)
+                pri
