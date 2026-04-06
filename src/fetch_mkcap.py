@@ -1,6 +1,12 @@
-import json, os
-from datetime import datetime, timedelta
-from pykrx import stock
+"""
+야후 파이낸스 기반 시가총액 수집기
+- 15분 지연 실시간 시세
+- API 키 불필요
+"""
+
+import json, os, time
+import requests
+from datetime import datetime
 
 COVERAGE = {
     "005930":"삼성전자","066570":"LG전자","034220":"LG디스플레이",
@@ -13,76 +19,69 @@ COVERAGE = {
     "301880":"네오티스","039030":"이오테크닉스","066900":"디에이피",
 }
 
-def get_biz_date():
-    # 최근 영업일 중 실제 데이터 있는 날 탐색 (최대 10일 전까지)
-    today = datetime.now()
-    for i in range(10):
-        d = today - timedelta(days=i)
-        if d.weekday() >= 5:
-            continue
-        candidate = d.strftime("%Y%m%d")
-        try:
-            tickers = stock.get_market_ticker_list(candidate, market="KOSPI")
-            if tickers and len(tickers) > 0:
-                print(f"유효 기준일: {candidate}")
-                return candidate
-        except Exception:
-            continue
-    # fallback: 금요일 강제 지정
-    d = today
-    while d.weekday() != 4:
-        d -= timedelta(days=1)
-    return d.strftime("%Y%m%d")
+MARKET_MAP = {
+    "005930":"KS","066570":"KS","034220":"KS","009150":"KS","011070":"KS",
+    "353200":"KS","007810":"KS","195870":"KS","000150":"KS","020150":"KS",
+    "336370":"KS","120110":"KS",
+    "213420":"KQ","097520":"KQ","222800":"KQ","356860":"KQ","064760":"KQ",
+    "090460":"KQ","272290":"KQ","051370":"KQ","077360":"KQ","301880":"KQ",
+    "039030":"KQ","066900":"KQ",
+}
 
-def fetch_all(biz_date):
+HEADERS = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+
+def fetch_yahoo(code):
+    suffix = MARKET_MAP.get(code, "KS")
+    ticker = f"{code}.{suffix}"
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}"
+    try:
+        r = requests.get(url, headers=HEADERS, params={"interval":"1d","range":"1d"}, timeout=10)
+        meta = r.json()["chart"]["result"][0]["meta"]
+        price  = meta.get("regularMarketPrice", 0)
+        prev   = meta.get("previousClose", price)
+        shares = meta.get("sharesOutstanding", 0)
+        chg    = round((price - prev) / prev * 100, 2) if prev else 0.0
+        mkcap  = int(shares * price) // 100000000 if shares and price else 0
+        return {
+            "ticker": code, "name": COVERAGE[code],
+            "market": "KOSPI" if suffix=="KS" else "KOSDAQ",
+            "price": int(price), "mkcap_eok": mkcap,
+            "chg_rate": chg, "date": datetime.now().strftime("%Y%m%d"),
+            "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        }
+    except Exception as e:
+        print(f"  [{code}] 오류: {e}")
+        return None
+
+def fetch_all():
     results = {}
-    for mkt in ["KOSPI", "KOSDAQ"]:
-        try:
-            tickers = stock.get_market_ticker_list(biz_date, market=mkt)
-            print(f"[{mkt}] 전체 종목수: {len(tickers)}")
-            for code in COVERAGE:
-                if code not in tickers:
-                    continue
-                try:
-                    df = stock.get_market_ohlcv(biz_date, biz_date, code)
-                    cap = stock.get_market_cap(biz_date, biz_date, code)
-                    if df.empty or cap.empty:
-                        continue
-                    price = int(df.iloc[-1]["종가"])
-                    chg   = float(df.iloc[-1]["등락률"])
-                    mkcap = int(cap.iloc[-1]["시가총액"]) // 100000000
-                    results[code] = {
-                        "ticker": code, "name": COVERAGE[code], "market": mkt,
-                        "price": price, "mkcap_eok": mkcap,
-                        "chg_rate": round(chg, 2), "date": biz_date,
-                    }
-                except Exception as e2:
-                    print(f"  [{code}] 오류: {e2}")
-            print(f"[{mkt}] {sum(1 for v in results.values() if v['market']==mkt)}개 완료")
-        except Exception as e:
-            print(f"[ERROR] {mkt}: {e}")
+    for i, (code, name) in enumerate(COVERAGE.items(), 1):
+        print(f"[{i}/{len(COVERAGE)}] {name} 조회 중...")
+        r = fetch_yahoo(code)
+        if r:
+            results[code] = r
+            print(f"  → {r['price']:,}원 / {r['mkcap_eok']:,}억 / {r['chg_rate']:+.2f}%")
+        time.sleep(0.3)
     return results
 
-def save(data, biz_date):
+def save(data):
     os.makedirs("data", exist_ok=True)
-    with open("data/latest.json", "w", encoding="utf-8") as f:
-        json.dump({"updated": biz_date, "stocks": list(data.values())}, f, ensure_ascii=False, indent=2)
+    today = datetime.now().strftime("%Y%m%d")
+    with open("data/latest.json","w",encoding="utf-8") as f:
+        json.dump({"updated":today,"updated_at":datetime.now().strftime("%Y-%m-%d %H:%M"),
+                   "source":"Yahoo Finance (15분 지연)","stocks":list(data.values())},
+                  f, ensure_ascii=False, indent=2)
     hist = []
     if os.path.exists("data/history.json"):
-        with open("data/history.json", encoding="utf-8") as f:
-            hist = json.load(f)
-    hist = [h for h in hist if h["date"] != biz_date]
-    hist.append({"date": biz_date, "stocks": list(data.values())})
-    hist = sorted(hist, key=lambda x: x["date"], reverse=True)[:250]
-    with open("data/history.json", "w", encoding="utf-8") as f:
-        json.dump(hist, f, ensure_ascii=False, indent=2)
+        with open("data/history.json",encoding="utf-8") as f: hist = json.load(f)
+    hist = [h for h in hist if h["date"]!=today]
+    hist.append({"date":today,"stocks":list(data.values())})
+    hist = sorted(hist,key=lambda x:x["date"],reverse=True)[:250]
+    with open("data/history.json","w",encoding="utf-8") as f:
+        json.dump(hist,f,ensure_ascii=False,indent=2)
     print(f"[DONE] {len(data)}개 저장")
 
-if __name__ == "__main__":
-    biz_date = get_biz_date()
-    data = fetch_all(biz_date)
-    if data:
-        save(data, biz_date)
-    else:
-        print("[ERROR] 데이터 없음")
-        exit(1)
+if __name__=="__main__":
+    data = fetch_all()
+    if data: save(data)
+    else: print("[ERROR] 데이터 없음"); exit(1)
