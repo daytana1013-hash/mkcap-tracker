@@ -22,7 +22,7 @@ jobs:
           python-version: "3.11"
 
       - name: 의존성 설치
-        run: pip install pykrx
+        run: pip install requests
 
       - name: 시가총액 수집
         run: python src/fetch_mkcap.py
