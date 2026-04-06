@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전기전자 밸류체인 시가총액 트래커</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&display=swap');
+:root {
+  --bg:#07090f;--surface:#0d1018;--surface2:#131720;--border:#1e2433;--border2:#252d40;
+  --text:#d4daf0;--muted:#4a5578;--muted2:#6b7ba8;--accent:#4f8ef7;--accent2:#2563eb;
+  --up:#34d399;--down:#f87171;--warn:#fbbf24;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans KR',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:12px;line-height:1.5;min-height:100vh}
+
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px 12px;position:sticky;top:0;z-index:200}
+.header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:10px}
+.title-block h1{font-size:16px;font-weight:700;letter-spacing:-.5px;color:#e8eeff;margin-bottom:3px}
+.subtitle{font-family:var(--mono);font-size:10px;color:var(--muted2)}
+.badges{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.badge{font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:3px;font-weight:600;white-space:nowrap}
+.badge-date{background:rgba(79,142,247,.15);color:var(--accent);border:1px solid rgba(79,142,247,.3)}
+.badge-live{background:rgba(52,211,153,.15);color:#34d399;border:1px solid rgba(52,211,153,.3)}
+.badge-confirm{background:rgba(79,142,247,.1);color:#60a5fa;border:1px solid rgba(79,142,247,.25)}
+.badge-est{background:rgba(251,191,36,.1);color:var(--warn);border:1px solid rgba(251,191,36,.25)}
+
+.filter-bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.filter-btn{font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--muted2);cursor:pointer;transition:all .15s;font-weight:600}
+.filter-btn:hover{border-color:var(--accent);color:var(--accent)}
+.filter-btn.active{background:var(--accent2);border-color:var(--accent2);color:#fff}
+.search-wrap{margin-left:auto;position:relative}
+.search-input{background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 10px 4px 26px;border-radius:3px;width:150px;outline:none}
+.search-input:focus{border-color:var(--accent)}
+.search-icon{position:absolute;left:7px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:10px}
+
+main{padding:14px 24px 40px}
+.summary-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.sum-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 14px}
+.sum-label{font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+.sum-val{font-size:18px;font-weight:700;color:#e8eeff}
+.sum-sub{font-size:10px;color:var(--muted2);margin-top:2px}
+
+.sector-title{display:flex;align-items:center;gap:8px;margin:14px 0 4px}
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow-x:auto;margin-bottom:6px}
+table{width:100%;border-collapse:collapse;min-width:1100px}
+thead th{background:#0a0d14;padding:7px 10px;text-align:right;font-family:var(--mono);font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;white-space:nowrap;border-bottom:1px solid var(--border)}
+thead th.th-l{text-align:left}
+.cg-row th{padding:4px 10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);text-align:center;background:#080b11}
+.cg-base{color:var(--muted2)}.cg-2025{color:#60a5fa}.cg-2026{color:#fbbf24}.cg-per{color:#a78bfa}.cg-roe{color:#34d399}
+tbody tr{border-top:1px solid var(--border);transition:background .1s}
+tbody tr:hover{background:rgba(79,142,247,.04)}
+td{padding:8px 10px;text-align:right;white-space:nowrap;vertical-align:middle}
+td.td-l{text-align:left}
+.col-sep{border-left:1px solid var(--border2)!important}
+
+.sname{font-weight:600;font-size:12px;color:#c8d4f4}
+.scode{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:1px}
+.ex-badge{font-family:var(--mono);font-size:9px;font-weight:700;padding:2px 5px;border-radius:2px}
+.ex-KOSPI{background:rgba(79,142,247,.15);color:#60a5fa}
+.ex-KOSDAQ{background:rgba(251,191,36,.12);color:#fbbf24}
+.ex-na{background:var(--border);color:var(--muted)}
+
+.mkcap-live{font-weight:700;font-size:13px;color:#e8eeff}
+.mkcap-unit{font-size:10px;color:var(--muted2);margin-left:2px}
+.price-up{color:var(--up);font-family:var(--mono);font-size:11px;font-weight:600}
+.price-dn{color:var(--down);font-family:var(--mono);font-size:11px;font-weight:600}
+.price-flat{color:var(--muted2);font-family:var(--mono);font-size:11px}
+.rev-c{color:#60a5fa;font-family:var(--mono);font-size:11px;font-weight:600}
+.rev-e{color:var(--warn);font-family:var(--mono);font-size:11px;font-style:italic}
+.rev-na{color:var(--muted);font-family:var(--mono);font-size:11px}
+.per-v{font-family:var(--mono);font-size:11px;color:#94a3b8}
+.per-nm{font-family:var(--mono);font-size:10px;color:var(--down);background:rgba(248,113,113,.08);padding:1px 4px;border-radius:2px}
+.bm-note{font-size:10px;color:var(--muted2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+tr.non-listed td{opacity:.45;font-style:italic}
+
+.loading{text-align:center;padding:60px;color:var(--muted)}
+.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.legend-section{margin-top:18px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 16px}
+.legend-title{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+.legend-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:5px 20px}
+.legend-item{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted2)}
+.legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+footer{margin-top:20px;padding-top:14px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.8}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-top">
+    <div class="title-block">
+      <h1>전기전자 밸류체인 시가총액 트래커</h1>
+      <div class="subtitle">KOSPI / KOSDAQ &nbsp;|&nbsp; Yahoo Finance 15분 지연 &nbsp;|&nbsp; 매일 18:00 KST 자동 업데이트</div>
+    </div>
+    <div class="badges">
+      <span class="badge badge-date" id="badgeDate">로딩 중...</span>
+      <span class="badge badge-live">● Yahoo Finance</span>
+      <span class="badge badge-confirm">■ 파란색 = 확정</span>
+      <span class="badge badge-est">■ 노란색 = 추정(E)</span>
+    </div>
+  </div>
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="filterSector('ALL',this)">전체</button>
+    <button class="filter-btn" onclick="filterSector('스마트폰/IT 세트',this)" style="color:#4f8ef7;border-color:#4f8ef730">IT 세트</button>
+    <button class="filter-btn" onclick="filterSector('디스플레이',this)" style="color:#a78bfa;border-color:#a78bfa30">디스플레이</button>
+    <button class="filter-btn" onclick="filterSector('PCB/기판(대형)',this)" style="color:#34d399;border-color:#34d39930">PCB 대형</button>
+    <button class="filter-btn" onclick="filterSector('PCB/기판(전문)',this)" style="color:#2dd4bf;border-color:#2dd4bf30">PCB 전문</button>
+    <button class="filter-btn" onclick="filterSector('디스플레이 부품',this)" style="color:#f472b6;border-color:#f472b630">DP 부품</button>
+    <button class="filter-btn" onclick="filterSector('CCL',this)" style="color:#fb923c;border-color:#fb923c30">CCL</button>
+    <button class="filter-btn" onclick="filterSector('솔더블',this)" style="color:#facc15;border-color:#facc1530">솔더볼</button>
+    <button class="filter-btn" onclick="filterSector('드릴링',this)" style="color:#94a3b8;border-color:#94a3b830">드릴링</button>
+    <div style="width:1px;height:16px;background:var(--border2)"></div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" id="searchInput" placeholder="종목명 검색..." oninput="render()">
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="summary-row" id="summaryRow"></div>
+  <div id="mainContent"><div class="loading"><div class="spinner"></div>데이터 로딩 중...</div></div>
+  <div class="legend-section">
+    <div class="legend-title">섹터 범례</div>
+    <div class="legend-grid">
+      <div class="legend-item"><div class="legend-dot" style="background:#4f8ef7"></div>스마트폰/IT 세트</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div>디스플레이 패널</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#34d399"></div>PCB/기판 (대형)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#2dd4bf"></div>PCB/기판 (전문)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f472b6"></div>디스플레이 부품</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fb923c"></div>CCL (동박적층판)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#facc15"></div>솔더볼</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#94a3b8"></div>드릴링/장비</div>
+    </div>
+  </div>
+  <footer>
+    [데이터] Yahoo Finance 15분 지연 시세 &nbsp;|&nbsp; GitHub Actions 매일 18:00 KST 자동 수집<br>
+    [매출/PER/ROE] DART 공시·FnGuide 컨센서스 기반 &nbsp;|&nbsp; 파란색=확정실적 / 노란색=추정치(E) &nbsp;|&nbsp; 단위: 억원
+  </footer>
+</main>
+
+<script>
+const SECTOR_COLORS = {
+  '스마트폰/IT 세트':'#4f8ef7','디스플레이':'#a78bfa',
+  'PCB/기판(대형)':'#34d399','PCB/기판(전문)':'#2dd4bf',
+  '디스플레이 부품':'#f472b6','CCL':'#fb923c','솔더블':'#facc15','드릴링':'#94a3b8'
+};
+
+// 섹터/재무 정적 데이터
+const STATIC = {
+  "005930":{sector:'스마트폰/IT 세트',q25:[791410,745660,860620,938370],q26:[900000,950000,1050000,1100000],per:['11','8','7'],roe:['8.5','13','15'],bm:'갤럭시폰/DS반도체/DX가전'},
+  "066570":{sector:'스마트폰/IT 세트',q25:[22126,21972,22459,22610],q26:[22500,23000,23500,23000],per:['12','10','9'],roe:['5.5','6.5','7.5'],bm:'HS가전/VS전장/BS기업B2B'},
+  "034220":{sector:'디스플레이',q25:[56220,60480,73550,67851],q26:[62000,68000,80000,72000],per:['NM','12','9'],roe:['흑자전환','8','10'],bm:'대형 OLED TV/중소형 OLED'},
+  "213420":{sector:'디스플레이',q25:[379,320,520,560],q26:[600,680,750,720],per:['28','20','16'],roe:['14','18','20'],bm:'삼성디스플레이向 OLED 발광 소재'},
+  "009150":{sector:'PCB/기판(대형)',q25:[26235,27234,28890,29021],q26:[31000,34000,37000,36000],per:['15','11','9'],roe:['9','12','14'],bm:'MLCC/FC-BGA/광학모듈'},
+  "011070":{sector:'PCB/기판(대형)',q25:[40234,53487,72099,76098],q26:[45000,60000,80000,78000],per:['7','5.5','5'],roe:['12','14','15'],bm:'아이폰 카메라모듈/반도체기판'},
+  "353200":{sector:'PCB/기판(전문)',q25:[2177,2382,2862,3100],q26:[3200,3500,3800,3800],per:['18','13','11'],roe:['10','14','16'],bm:'FC-BGA/메모리기판/PKG기판'},
+  "097520":{sector:'PCB/기판(전문)',q25:[2414,2417,2961,3200],q26:[3400,3700,4000,4000],per:['12','9','8'],roe:['20','22','22'],bm:'MLB(AI서버향)/엔비디아 납품'},
+  "222800":{sector:'PCB/기판(전문)',q25:[3040,3200,3450,3600],q26:[3700,3900,4200,4100],per:['18','12','10'],roe:['6','9','11'],bm:'MCP·BGA기판/메모리향'},
+  "356860":{sector:'PCB/기판(전문)',q25:[510,800,670,605],q26:[700,820,900,900],per:['14','10','8'],roe:['15','18','20'],bm:'DDR5/HBM 모듈PCB'},
+  "007810":{sector:'PCB/기판(전문)',q25:[3310,3318,3757,3900],q26:[4100,4300,4700,4700],per:['15','10','8'],roe:['7','10','13'],bm:'HDI/MLB/FPCB-영풍계열'},
+  "064760":{sector:'PCB/기판(전문)',q25:[584,650,784,820],q26:[900,1000,1100,1100],per:['18','14','12'],roe:['18','20','22'],bm:'CVD SiC 포커스링-램리서치'},
+  "195870":{sector:'PCB/기판(전문)',q25:[1680,1780,1850,1900],q26:[1950,2100,2200,2200],per:['14','11','9'],roe:['8','11','13'],bm:'리드프레임(65%)/PKG기판(35%)'},
+  "090460":{sector:'PCB/기판(전문)',q25:[3930,4685,5200,5500],q26:[5200,5800,6500,6500],per:['10','8','7'],roe:['14','16','17'],bm:'RFPCB/FPCB-애플향'},
+  "272290":{sector:'디스플레이 부품',q25:[1820,1950,2100,2200],q26:[2300,2500,2700,2700],per:['14','11','10'],roe:['10','12','13'],bm:'OLED접착소재/FPCB소재'},
+  "051370":{sector:'디스플레이 부품',q25:[1250,1300,1380,1450],q26:[1500,1600,1700,1700],per:['NM','18','14'],roe:['4','7','9'],bm:'FPCB/폴더블폰 힌지'},
+  "000150":{sector:'CCL',q25:[3800,4500,4399,6058],q26:[5200,5800,6500,6500],per:['20','12','9'],roe:['8','12','15'],bm:'AI 가속기용 하이엔드 CCL/엔비디아 단독'},
+  "020150":{sector:'CCL',q25:[1900,1980,2050,2100],q26:[2300,2600,2900,2900],per:['NM','25','15'],roe:['적자','5','10'],bm:'전지박(EV)/AI서버향 동박'},
+  "336370":{sector:'CCL',q25:[1380,1420,1451,1500],q26:[1600,1750,1900,1900],per:['NM','NM','22'],roe:['적자','적자','6'],bm:'AI가속기향 동박(하이엔드)/전지박'},
+  "120110":{sector:'CCL',q25:[5200,5400,5600,5700],q26:[5900,6200,6500,6500],per:['12','10','9'],roe:['5','6','7.5'],bm:'유리섬유(E-glass)/에폭시수지-CCL소재'},
+  "077360":{sector:'솔더블',q25:[490,510,530,560],q26:[580,630,680,680],per:['20','16','14'],roe:['10','12','14'],bm:'솔더볼(반도체PKG접합)/OLED소재'},
+  "301880":{sector:'드릴링',q25:[130,140,155,165],q26:[175,190,210,210],per:['18','14','12'],roe:['8','10','12'],bm:'PCB 미세 드릴비트 국내 1위'},
+  "039030":{sector:'드릴링',q25:[830,870,1005,1050],q26:[1100,1200,1300,1300],per:['15','12','10'],roe:['18','20','21'],bm:'레이저 PCB 드릴링·반도체 마킹장비'},
+  "066900":{sector:'드릴링',q25:[440,470,510,520],q26:[550,590,640,640],per:['22','16','13'],roe:['6','9','11'],bm:'HDI PCB/마이크로드릴-삼성 스마트폰향'},
+};
+
+let liveData = [];
+let currentSector = 'ALL';
+
+// ─── 데이터 로드 ───
+async function loadData() {
+  try {
+    const r = await fetch('data/latest.json?t=' + Date.now());
+    if (!r.ok) throw new Error('latest.json 없음');
+    const json = await r.json();
+    liveData = json.stocks || [];
+    const updated = json.updated_at || json.updated || '';
+    document.getElementById('badgeDate').textContent = '업데이트: ' + updated;
+    render();
+  } catch(e) {
+    document.getElementById('mainContent').innerHTML =
+      `<div style="padding:40px;text-align:center;color:var(--down)">
+        ⚠ 데이터 로드 실패: ${e.message}<br>
+        <span style="color:var(--muted);font-size:11px">GitHub Actions 실행 후 data/latest.json 생성 필요</span>
+      </div>`;
+  }
+}
+
+// ─── 유틸 ───
+function fmtRev(v, isEst) {
+  if (v===null||v===undefined) return '<span class="rev-na">-</span>';
+  return `<span class="${isEst?'rev-e':'rev-c'}">${v.toLocaleString()}</span>`;
+}
+function fmtPer(v) {
+  if (!v||v==='-') return '<span class="rev-na">-</span>';
+  if (['NM','적자','흑자전환'].some(s=>String(v).includes(s)))
+    return `<span class="per-nm">${v}</span>`;
+  return `<span class="per-v">${v}</span>`;
+}
+function fmtPrice(s) {
+  if (!s.price) return '<span class="rev-na">-</span>';
+  const cls = s.chg_rate>0?'price-up':s.chg_rate<0?'price-dn':'price-flat';
+  const sign = s.chg_rate>0?'+':'';
+  return `<span class="${cls}">${s.price.toLocaleString()}원 <span style="font-size:10px">(${sign}${s.chg_rate?.toFixed(2)||0}%)</span></span>`;
+}
+function fmtMkcap(s) {
+  if (!s.mkcap_eok) return '<span class="rev-na">-</span>';
+  return `<span class="mkcap-live">${s.mkcap_eok.toLocaleString()}</span><span class="mkcap-unit">억</span>`;
+}
+
+// ─── 렌더 ───
+function getFiltered() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  return liveData.filter(s => {
+    const sOk = currentSector==='ALL' || (STATIC[s.ticker]?.sector===currentSector);
+    const qOk = !q || s.name.toLowerCase().includes(q) || s.ticker.includes(q);
+    return sOk && qOk;
+  });
+}
+
+function renderSummary() {
+  const filtered = getFiltered();
+  const total = filtered.reduce((a,s)=>a+(s.mkcap_eok||0),0);
+  const ups   = filtered.filter(s=>s.chg_rate>0).length;
+  const downs = filtered.filter(s=>s.chg_rate<0).length;
+  const top   = [...filtered].sort((a,b)=>(b.mkcap_eok||0)-(a.mkcap_eok||0))[0];
+  document.getElementById('summaryRow').innerHTML = [
+    {label:'합산 시총', val:(total/10000).toFixed(1)+'조', sub:filtered.length+'개 종목'},
+    {label:'상승/하락', val:`${ups} / ${downs}`, sub:`보합 ${filtered.length-ups-downs}`},
+    {label:'최대 시총', val:top?top.name:'-', sub:top?(top.mkcap_eok/10000).toFixed(2)+'조':''},
+    {label:'데이터', val:'Yahoo Finance', sub:'15분 지연'},
+  ].map(c=>`<div class="sum-card"><div class="sum-label">${c.label}</div><div class="sum-val">${c.val}</div><div class="sum-sub">${c.sub}</div></div>`).join('');
+}
+
+function render() {
+  renderSummary();
+  const sectors = [...new Set(Object.values(STATIC).map(s=>s.sector))];
+  let html = '';
+  for (const sector of sectors) {
+    if (currentSector!=='ALL' && sector!==currentSector) continue;
+    const rows = getFiltered().filter(s=>STATIC[s.ticker]?.sector===sector);
+    if (!rows.length) continue;
+    const color = SECTOR_COLORS[sector]||'#94a3b8';
+    html += `
+    <div class="sector-title">
+      <div style="width:4px;height:20px;background:${color};border-radius:2px"></div>
+      <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:.8px">${sector}</span>
+      <span style="font-family:var(--mono);font-size:10px;color:var(--muted)">${rows.length}개</span>
+    </div>
+    <div class="table-wrap"><table>
+      <thead>
+        <tr class="cg-row">
+          <th colspan="5" class="cg-base th-l">기본 정보</th>
+          <th colspan="4" class="cg-2025">2025 분기별 매출 (억원, 확정)</th>
+          <th colspan="4" class="cg-2026 col-sep">2026E 분기별 매출 (억원, 추정)</th>
+          <th colspan="3" class="cg-per col-sep">PER (배)</th>
+          <th colspan="3" class="cg-roe col-sep">ROE (%)</th>
+          <th class="cg-base col-sep">BM</th>
+        </tr>
+        <tr>
+          <th class="th-l" style="width:24px">#</th>
+          <th class="th-l" style="width:130px">종목</th>
+          <th class="th-l" style="width:58px">거래소</th>
+          <th style="width:150px">주가 / 등락</th>
+          <th style="width:100px">시가총액</th>
+          <th style="width:66px">1Q25</th><th style="width:66px">2Q25</th>
+          <th style="width:66px">3Q25</th><th style="width:66px">4Q25</th>
+          <th class="col-sep" style="width:70px">1Q26E</th><th style="width:70px">2Q26E</th>
+          <th style="width:70px">3Q26E</th><th style="width:70px">4Q26E</th>
+          <th class="col-sep" style="width:50px">25E</th><th style="width:50px">26E</th><th style="width:50px">27E</th>
+          <th class="col-sep" style="width:50px">25E</th><th style="width:50px">26E</th><th style="width:50px">27E</th>
+          <th class="col-sep th-l" style="min-width:180px">주력 제품/BM</th>
+        </tr>
+      </thead>
+      <tbody>
+      ${rows.map((s,i)=>{
+        const st = STATIC[s.ticker]||{};
+        return `<tr>
+          <td style="color:var(--muted);font-family:var(--mono);font-size:10px">${i+1}</td>
+          <td class="td-l"><div class="sname">${s.name}</div><div class="scode">${s.ticker}</div></td>
+          <td class="td-l"><span class="ex-badge ex-${s.market}">${s.market}</span></td>
+          <td>${fmtPrice(s)}</td>
+          <td>${fmtMkcap(s)}</td>
+          <td>${fmtRev(st.q25?.[0],false)}</td><td>${fmtRev(st.q25?.[1],false)}</td>
+          <td>${fmtRev(st.q25?.[2],false)}</td><td>${fmtRev(st.q25?.[3],false)}</td>
+          <td class="col-sep">${fmtRev(st.q26?.[0],true)}</td><td>${fmtRev(st.q26?.[1],true)}</td>
+          <td>${fmtRev(st.q26?.[2],true)}</td><td>${fmtRev(st.q26?.[3],true)}</td>
+          <td class="col-sep">${fmtPer(st.per?.[0])}</td><td>${fmtPer(st.per?.[1])}</td><td>${fmtPer(st.per?.[2])}</td>
+          <td class="col-sep">${fmtPer(st.roe?.[0])}</td><td>${fmtPer(st.roe?.[1])}</td><td>${fmtPer(st.roe?.[2])}</td>
+          <td class="col-sep td-l"><div class="bm-note" title="${st.bm||''}">${st.bm||'-'}</div></td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table></div>`;
+  }
+  document.getElementById('mainContent').innerHTML = html || '<div style="padding:40px;text-align:center;color:var(--muted)">검색 결과 없음</div>';
+}
+
+function filterSector(s,btn) {
+  currentSector=s;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+loadData();
+</script>
+</body>
+</html>
