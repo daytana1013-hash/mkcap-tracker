@@ -1,77 +1,77 @@
 {
-  "updated": "20260729",
-  "updated_at": "2026-07-29 11:30",
+  "updated": "20260730",
+  "updated_at": "2026-07-30 11:15",
   "source": "Yahoo Finance (15분 지연)",
   "stocks": [
     {
       "ticker": "005930",
       "name": "삼성전자",
       "market": "KOSPI",
-      "price": 208500,
+      "price": 207000,
       "mkcap_eok": 0,
       "chg_rate": 0.0,
-      "date": "20260729",
-      "updated_at": "2026-07-29 11:30"
+      "date": "20260730",
+      "updated_at": "2026-07-30 11:15"
     },
     {
       "ticker": "066570",
       "name": "LG전자",
       "market": "KOSPI",
-      "price": 150500,
+      "price": 148000,
       "mkcap_eok": 0,
       "chg_rate": 0.0,
-      "date": "20260729",
-      "updated_at": "2026-07-29 11:30"
+      "date": "20260730",
+      "updated_at": "2026-07-30 11:15"
     },
     {
       "ticker": "034220",
       "name": "LG디스플레이",
       "market": "KOSPI",
-      "price": 8570,
+      "price": 8540,
       "mkcap_eok": 0,
       "chg_rate": 0.0,
-      "date": "20260729",
-      "updated_at": "2026-07-29 11:30"
+      "date": "20260730",
+      "updated_at": "2026-07-30 11:15"
     },
     {
       "ticker": "213420",
       "name": "덕산네오룩스",
       "market": "KOSDAQ",
-      "price": 25900,
+      "price": 26800,
       "mkcap_eok": 0,
       "chg_rate": 0.0,
-      "date": "20260729",
-      "updated_at": "2026-07-29 11:30"
+      "date": "20260730",
+      "updated_at": "2026-07-30 11:15"
     },
     {
       "ticker": "009150",
       "name": "삼성전기",
       "market": "KOSPI",
-      "price": 1029000,
+      "price": 879000,
       "mkcap_eok": 0,
       "chg_rate": 0.0,
-      "date": "20260729",
-      "updated_at": "2026-07-29 11:30"
+      "date": "20260730",
+      "updated_at": "2026-07-30 11:15"
     },
     {
       "ticker": "011070",
       "name": "LG이노텍",
       "market": "KOSPI",
-      "price": 458000,
+      "price": 424000,
       "mkcap_eok": 0,
       "chg_rate": 0.0,
-      "date": "20260729",
-      "updated_at": "2026-07-29 11:30"
+      "date": "20260730",
+      "updated_at": "2026-07-30 11:15"
     },
     {
       "ticker": "353200",
       "name": "대덕전자",
       "market": "KOSPI",
-      "price": 80900,
+      "price": 74500,
       "mkcap_eok": 0,
       "chg_rate": 0.0,
-      "date": "20260729",
-      "updated_at": "2026-07-29 11:30"
+      "date": "20260730",
+      "updated_at": "2026-07-30 11:15"
     },
     {
       "ticker": "097520",
@@ -80,148 +80,148 @@
       "price": 22100,
       "mkcap_eok": 0,
       "chg_rate": 0.0,
-      "date": "20260729",
-      "updated_at": "2026-07-29 11:30"
+      "date": "20260730",
+      "updated_at": "2026-07-30 11:15"
     },
     {
       "ticker": "222800",
       "name": "심텍",
       "market": "KOSDAQ",
-      "price": 68600,
+      "price": 63800,
       "mkcap_eok": 0,
       "chg_rate": 0.0,
-      "date": "20260729",
-      "updated_at": "2026-07-29 11:30"
+      "date": "20260730",
+      "updated_at": "2026-07-30 11:15"
     },
     {
       "ticker": "356860",
       "name": "티엘비",
       "market": "KOSDAQ",
-      "price": 21400,
+      "price": 20550,
       "mkcap_eok": 0,
       "chg_rate": 0.0,
-      "date": "20260729",
-      "updated_at": "2026-07-29 11:30"
+      "date": "20260730",
+      "updated_at": "2026-07-30 11:15"
     },
     {
       "ticker": "007810",
       "name": "코리아써키트",
       "market": "KOSPI",
-      "price": 42650,
+      "price": 38500,
       "mkcap_eok": 0,
       "chg_rate": 0.0,
-      "date": "20260729",
-      "updated_at": "2026-07-29 11:30"
+      "date": "20260730",
+      "updated_at": "2026-07-30 11:15"
     },
     {
       "ticker": "064760",
       "name": "티씨케이",
       "market": "KOSDAQ",
-      "price": 149800,
+      "price": 138200,
       "mkcap_eok": 0,
       "chg_rate": 0.0,
-      "date": "20260729",
-      "updated_at": "2026-07-29 11:30"
+      "date": "20260730",
+      "updated_at": "2026-07-30 11:15"
     },
     {
       "ticker": "195870",
       "name": "해성디에스",
       "market": "KOSPI",
-      "price": 40150,
+      "price": 38150,
       "mkcap_eok": 0,
       "chg_rate": 0.0,
-      "date": "20260729",
-      "updated_at": "2026-07-29 11:30"
+      "date": "20260730",
+      "updated_at": "2026-07-30 11:15"
     },
     {
       "ticker": "272290",
       "name": "이녹스첨단소재",
       "market": "KOSDAQ",
-      "price": 17500,
+      "price": 17280,
       "mkcap_eok": 0,
       "chg_rate": 0.0,
-      "date": "20260729",
-      "updated_at": "2026-07-29 11:30"
+      "date": "20260730",
+      "updated_at": "2026-07-30 11:15"
     },
     {
       "ticker": "051370",
       "name": "인터플렉스",
       "market": "KOSDAQ",
-      "price": 5690,
+      "price": 5840,
       "mkcap_eok": 0,
       "chg_rate": 0.0,
-      "date": "20260729",
-      "updated_at": "2026-07-29 11:30"
+      "date": "20260730",
+      "updated_at": "2026-07-30 11:15"
     },
     {
       "ticker": "000150",
       "name": "두산",
       "market": "KOSPI",
-      "price": 999000,
+      "price": 900000,
       "mkcap_eok": 0,
       "chg_rate": 0.0,
-      "date": "20260729",
-      "updated_at": "2026-07-29 11:30"
+      "date": "20260730",
+      "updated_at": "2026-07-30 11:15"
     },
     {
       "ticker": "020150",
       "name": "롯데에너지머티리얼즈",
       "market": "KOSPI",
-      "price": 24200,
+      "price": 24350,
       "mkcap_eok": 0,
       "chg_rate": 0.0,
-      "date": "20260729",
-      "updated_at": "2026-07-29 11:30"
+      "date": "20260730",
+      "updated_at": "2026-07-30 11:15"
     },
     {
       "ticker": "336370",
       "name": "솔루스첨단소재",
       "market": "KOSPI",
-      "price": 5590,
+      "price": 5700,
       "mkcap_eok": 0,
       "chg_rate": 0.0,
-      "date": "20260729",
-      "updated_at": "2026-07-29 11:30"
+      "date": "20260730",
+      "updated_at": "2026-07-30 11:15"
     },
     {
       "ticker": "120110",
       "name": "코오롱인더",
       "market": "KOSPI",
-      "price": 45950,
+      "price": 46050,
       "mkcap_eok": 0,
       "chg_rate": 0.0,
-      "date": "20260729",
-      "updated_at": "2026-07-29 11:30"
+      "date": "20260730",
+      "updated_at": "2026-07-30 11:15"
     },
     {
       "ticker": "077360",
       "name": "덕산하이메탈",
       "market": "KOSDAQ",
-      "price": 7300,
+      "price": 6900,
       "mkcap_eok": 0,
       "chg_rate": 0.0,
-      "date": "20260729",
-      "updated_at": "2026-07-29 11:30"
+      "date": "20260730",
+      "updated_at": "2026-07-30 11:15"
     },
     {
       "ticker": "039030",
       "name": "이오테크닉스",
       "market": "KOSDAQ",
-      "price": 249000,
+      "price": 240000,
       "mkcap_eok": 0,
       "chg_rate": 0.0,
-      "date": "20260729",
-      "updated_at": "2026-07-29 11:30"
+      "date": "20260730",
+      "updated_at": "2026-07-30 11:15"
     },
     {
       "ticker": "066900",
       "name": "디에이피",
       "market": "KOSDAQ",
-      "price": 1769,
+      "price": 1727,
       "mkcap_eok": 0,
       "chg_rate": 0.0,
-      "date": "20260729",
-      "updated_at": "2026-07-29 11:30"
+      "date": "20260730",
+      "updated_at": "2026-07-30 11:15"
     }
   ]
 }
